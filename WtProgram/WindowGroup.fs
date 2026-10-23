@@ -654,7 +654,11 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
         isVisibleCell.value <-
             this.isEmpty.not &&
             zorderCell.value.where(isMinimized >> not).tryHead.exists(fun hwnd -> not(WindowCloaking.IsCloaked hwnd)) &&
-            inMoveSize.value.not
+            // A reserve-space group keeps its strip up through a move/resize instead of hiding
+            // it for the duration: its own live-tracking branch in the location-change handler
+            // (EVENT_OBJECT_LOCATIONCHANGE, "inMoveSize.value && reserveSpaceApplies()") keeps
+            // placement following the window, so there is no stale position left on screen.
+            (inMoveSize.value.not || reserveSpaceApplies())
         this.updateSplitChrome()
 
     member private this.updatePlacements() = this.applyLayout()
@@ -2092,6 +2096,11 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
                         if abs(actual.x-expected.x)>tolerance || abs(actual.y-expected.y)>tolerance || abs(actual.width-expected.width)>snap || abs(actual.height-expected.height)>snap then
                             this.followPane(hwnd,expected,this.layoutFrame,s.tree,s,actual)
                     | _ -> ()
+            | _ when this.isTop(hwnd) && inMoveSize.value && reserveSpaceApplies() ->
+                // Keep the strip tracking a live drag/resize instead of freezing where it was:
+                // a window mid-drag reports its own current bounds directly (not maximized, so
+                // no monitor/shrink math), cheap enough to run on every location-change tick.
+                this.saveTopWindowPlacement()
             | _ when this.isTop(hwnd) && inMoveSize.value.not ->
                 //you can miss EVENT_SYSTEM_MOVESIZESTART events
                 //when a window is created and is immediatly in move size, we subscribe
