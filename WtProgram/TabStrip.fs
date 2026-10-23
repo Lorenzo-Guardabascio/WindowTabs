@@ -304,7 +304,18 @@ type TabStrip(monitor:ITabStripMonitor) as this =
         let mousePt() = msg.lParam.location.add(this.renderedShift)
         let mouseDown btn =
             let pt = mousePt()
-            if btn<>MouseLeft || not (this.beginColumnInteraction(pt)) then
+            // A press on the bar's own background, not any tab: drag the window as if the
+            // press had landed on its title bar, the way the empty part of a browser's tab
+            // bar does. Only when it is horizontal, next to column resize/scroll in the side
+            // docks, which already claim empty-area presses for themselves. The physical
+            // button check keeps a synthesized WM_LBUTTONDOWN (automated input, accessibility
+            // tools) from starting SC_MOVE's modal mouse-driven loop with no real movement
+            // ever coming to end it.
+            if btn=MouseLeft && not this.isVertical && this.hitAt(pt).IsNone &&
+               WinUserApi.GetAsyncKeyState(VirtualKeyCodes.VK_LBUTTON)<0s then
+                this.window.releaseCapture()
+                this.foreground |> Option.iter(fun (Tab(hwnd)) -> this.os.windowFromHwnd(hwnd).beginDragMove())
+            elif btn<>MouseLeft || not (this.beginColumnInteraction(pt)) then
                 this.processMouse(MouseClick(pt, btn, MouseDown))
             msg.def()
         let mouseUp btn = 
