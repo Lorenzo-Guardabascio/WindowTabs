@@ -161,7 +161,10 @@ module FollowerPlacement =
                 if valid() && not window.isMinimized && WinUserApi.IsWindow(top) && window.prevZorder.hwnd<>top then
                     window.insertAfter(top)
             | ShrinkMaximized bounds ->
-                if valid() && window.isMaximized && window.bounds<>bounds then window.move(bounds)
+                // The caller already decided this window counts as maximized (including apps
+                // that fill the work area through their own bounds instead of WS_MAXIMIZE); not
+                // re-checked here, since IsZoomed alone would silently skip those windows.
+                if valid() && window.bounds<>bounds then window.move(bounds)
             | SetMinimized(minimized,below) ->
                 if window.isMinimized<>minimized && valid() then
                     if minimized then window.prepareMinimizeAnchor(valid)

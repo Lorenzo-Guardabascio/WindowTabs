@@ -357,6 +357,19 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
     let mutable leftGroup : (IntPtr * int64) option = None
     let isMinimized hwnd = this.os.windowFromHwnd(hwnd).isMinimized
     let isOpen hwnd = WinUserApi.IsWindow(hwnd) && WinUserApi.IsWindowVisible(hwnd)
+    /// Some apps with their own custom titlebar (Electron among them) maximize by setting their
+    /// own bounds to the monitor's work area instead of asking Windows to maximize them, so
+    /// IsZoomed never reports true for them. Treat filling the work area the same as maximized,
+    /// or reserve-space never gets a chance to run for these windows at all.
+    let fillsMonitor (window:Window) =
+        match Mon.fromHwnd(window.hwnd) with
+        | Some mon ->
+            let wr = mon.workRect
+            let b = window.bounds
+            let tol = Dpi.scale 8
+            abs(b.x-wr.x)<=tol && abs(b.y-wr.y)<=tol && abs(b.width-wr.width)<=tol*2 && abs(b.height-wr.height)<=tol*2
+        | None -> false
+    let isMaximizedLike (window:Window) = window.isMaximized || fillsMonitor window
     let hookCleanup = Cell.create(Map2<IntPtr, IDisposable>())
     let shellHookWindow = Cell.create(None)
     let winEventHandler = Cell.create(None)
@@ -1847,6 +1860,16 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
                             let reserved = this.tabAppearance.tabHeight - this.tabAppearance.tabHeightOffset + Dpi.scale 4
                             Rect(Pt(wr.x, wr.y + reserved), Sz(wr.width, wr.height - reserved))
                         else wr)
+                elif reserveSpaceApplies() && fillsMonitor window then
+                    // Some apps with a custom titlebar (Electron among them) maximize by setting
+                    // their own bounds to the work area instead of asking Windows to maximize
+                    // them, so IsZoomed never reports true and the branch above never runs for
+                    // them. Reserve the same room for these without touching the unrelated
+                    // cross-monitor correction above, which is for genuinely maximized windows.
+                    Mon.fromHwnd(window.hwnd).map(fun mon ->
+                        let wr = mon.workRect
+                        let reserved = this.tabAppearance.tabHeight - this.tabAppearance.tabHeightOffset + Dpi.scale 4
+                        Rect(Pt(wr.x, wr.y + reserved), Sz(wr.width, wr.height - reserved)))
                 else None
             let bounds = monitorBounds.def(window.bounds)
             let visible = monitorBounds.def(window.visibleBounds)
@@ -2084,7 +2107,7 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
                     this.adjustChildWindows()
                     // Only the followers are aligned above: the foreground window keeps whatever
                     // rect Windows just gave it unless we are reserving room for the strip.
-                    if window.isMaximized && reserveSpaceApplies() then this.shrinkReservedHead(hwnd)
+                    if reserveSpaceApplies() && isMaximizedLike window then this.shrinkReservedHead(hwnd)
                     if isForeground then
                         this.makeTopWindowForeground()
                     this.foreground <- this.os.foreground.hwnd
