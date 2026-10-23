@@ -139,6 +139,10 @@ type FollowerPlacementRequest =
     | PrepareMinimizeAnchor
     /// Only the stacking: directly below the given window, as a split's other pane goes below the tabs.
     | StackBelow of IntPtr
+    /// Shrinks an already-maximized window on its own monitor, such as reserving room for the
+    /// strip above it. MoveWindow alone, never SetWindowPlacement(SW_SHOWMAXIMIZED): that call
+    /// re-maximizes to the monitor's native full size and would undo the smaller target.
+    | ShrinkMaximized of Rect
 
 module FollowerPlacement =
     let private identity hwnd =
@@ -156,6 +160,8 @@ module FollowerPlacement =
             | StackBelow top ->
                 if valid() && not window.isMinimized && WinUserApi.IsWindow(top) && window.prevZorder.hwnd<>top then
                     window.insertAfter(top)
+            | ShrinkMaximized bounds ->
+                if valid() && window.isMaximized && window.bounds<>bounds then window.move(bounds)
             | SetMinimized(minimized,below) ->
                 if window.isMinimized<>minimized && valid() then
                     if minimized then window.prepareMinimizeAnchor(valid)
@@ -196,12 +202,9 @@ module FollowerPlacement =
                     move()
                 elif actual.showCmd=ShowWindowCommands.SW_SHOWMAXIMIZED && wp.showCmd=ShowWindowCommands.SW_SHOWMAXIMIZED then
                     // Cross-monitor maximization requires moving before restoring placement.
-                    // SetWindowPlacement(SW_SHOWMAXIMIZED) re-maximizes to the monitor's native
-                    // full size, undoing a smaller same-monitor target (room reserved for the
-                    // strip), so it only runs when the captured placement itself changed, not
-                    // for a pure size correction on the same monitor.
-                    if window.bounds<>target() then move()
-                    if actual<>wp then place wp
+                    if actual<>wp || window.bounds<>target() then
+                        move()
+                        place wp
                 elif actual<>wp then place wp
                 if valid() && window.needsMinimizeAnchor then positioned <- true
                 window.prepareMinimizeAnchor(valid)
@@ -225,6 +228,7 @@ module FollowerPlacement =
     let restoreBelowRequest hwnd top = identity hwnd,SetMinimized(false,Some top)
     let hideRequest hwnd = identity hwnd,HideForMove
     let stackBelowRequest hwnd top = identity hwnd,StackBelow top
+    let shrinkMaximizedRequest hwnd bounds = identity hwnd,ShrinkMaximized bounds
     let prepareMinimizeRequest hwnd = identity hwnd,PrepareMinimizeAnchor
     let isChangingMinimizeState owner hwnd =
         queue.isWindowBusyWith(owner,hwnd,fun (_,request) -> match request with SetMinimized _ -> true | _ -> false)

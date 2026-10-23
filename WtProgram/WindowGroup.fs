@@ -521,7 +521,7 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
                     | Some(top) when this.os.windowFromHwnd(top).isMaximized ->
                         this.saveTopWindowPlacement()
                         this.adjustChildWindows()
-                        if reserveSpaceApplies() then this.adjustWindowPlacement(top)
+                        if reserveSpaceApplies() then this.shrinkReservedHead(top)
                         spaceReservedExport.update()
                     | _ -> ()))
         exitedEvent.Publish.Add(fun _ -> reserveSpaceSubscription.Dispose())
@@ -1873,6 +1873,14 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
             reconcilePlacementState <- true
             this.finishPlacementReconciliation()
 
+    /// The foreground window of a reserve-space group: never routed through adjustWindowPlacement,
+    /// whose AlignWindow request would re-assert SW_SHOWMAXIMIZED and undo the smaller target
+    /// (see ShrinkMaximized's own doc comment).
+    member private this.shrinkReservedHead(hwnd) =
+        match placement.value with
+        | Some(bounds,_,_) -> FollowerPlacement.queue.submit(placementOwner,hwnd,FollowerPlacement.shrinkMaximizedRequest hwnd bounds)
+        | None -> ()
+
     /// Minimizing or restoring, as Windows does it window by window.
     member this.isChangingMinimizeState = reconcileMinimizeState || pendingMinimizeStates.Count>0
 
@@ -2073,7 +2081,7 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
                     this.adjustChildWindows()
                     // Only the followers are aligned above: the foreground window keeps whatever
                     // rect Windows just gave it unless we are reserving room for the strip.
-                    if window.isMaximized && reserveSpaceApplies() then this.adjustWindowPlacement(hwnd)
+                    if window.isMaximized && reserveSpaceApplies() then this.shrinkReservedHead(hwnd)
                     if isForeground then
                         this.makeTopWindowForeground()
                     this.foreground <- this.os.foreground.hwnd
