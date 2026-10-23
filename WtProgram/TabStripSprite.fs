@@ -797,10 +797,9 @@ type TabStripSprite<'id> when 'id : equality = {
         path
 
     member private this.bgImage =
-        let bgColor = 
-            if this.isVertical then this.appearance.tabNormalBgColor
-            elif this.transparent then Color.FromArgb(0, 0, 0, 0)
-            else Color.FromArgb(1, 1, 1, 1) 
+        let bgColor =
+            if not this.isVertical && this.transparent then Color.FromArgb(0, 0, 0, 0)
+            else this.appearance.tabNormalBgColor
         let img = Img(if this.size.isEmptyArea then Sz(1,1) else this.size)
         use gr = img.graphics
         use brush = new SolidBrush(bgColor)

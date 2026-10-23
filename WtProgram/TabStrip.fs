@@ -35,7 +35,7 @@ type TabStrip(monitor:ITabStripMonitor) as this =
     let lorderCell = Cell.create(List2())
     let zorderCell = Cell.create(List2())
     let visibleCell = Bemo.Cell<bool>(Cell, false, (=))
-    let transparentCell = Cell.create(true)
+    let transparentCell = Cell.create(false)
     let showInsideCell = Bemo.Cell<bool>(Cell, false, (=))
     let isInAltTabCell = Cell.create(false)
     let numberBadgeKeysCell = Bemo.Cell<string>(Cell, SettingsCatalog.textDefault "numberLeaderKeys", (=))

@@ -941,7 +941,7 @@ type TabStripDecorator(group:WindowGroup) as this =
         member this.dragBegin() =
             this.invokeAsync <| fun() ->
                 isDraggingCell.value <- true
-                this.ts.transparent <- false
+                this.ts.transparent <- true
                 group.transitionsPaused <- true
                 if WinUserApi.IsWindow this.ts.hwnd then
                     if layoutPreview.IsNone then layoutPreview <- Some(new LayoutPreview())
@@ -1024,7 +1024,7 @@ type TabStripDecorator(group:WindowGroup) as this =
                 dragStartIndex <- None
                 this.ts.dragScrollPoint <- None
                 isDraggingCell.value <- false
-                this.ts.transparent <- true
+                this.ts.transparent <- false
                 match this.ts.movedTab with
                 | Some(tab, index) ->
                     this.ts.moveTab(tab, index)
