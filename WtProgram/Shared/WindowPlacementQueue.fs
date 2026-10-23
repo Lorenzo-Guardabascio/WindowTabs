@@ -164,7 +164,16 @@ module FollowerPlacement =
                 // The caller already decided this window counts as maximized (including apps
                 // that fill the work area through their own bounds instead of WS_MAXIMIZE); not
                 // re-checked here, since IsZoomed alone would silently skip those windows.
-                if valid() && window.bounds<>bounds then window.move(bounds)
+                if valid() && window.bounds<>bounds then
+                    window.move(bounds)
+                    // Some apps with a custom titlebar (Chromium/Electron among them) reject an
+                    // external resize outright while flagged maximized, synchronously, inside
+                    // this same call: move() above returns with the bounds unchanged. Clearing
+                    // the flag first and moving again is the only way found to make it stick;
+                    // well-behaved apps never reach this, since their first move() already took.
+                    if valid() && window.bounds<>bounds && window.isMaximized then
+                        window.showWindow(ShowWindowCommands.SW_RESTORE)
+                        if valid() then window.move(bounds)
             | SetMinimized(minimized,below) ->
                 if window.isMinimized<>minimized && valid() then
                     if minimized then window.prepareMinimizeAnchor(valid)
