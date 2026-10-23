@@ -427,11 +427,6 @@ and
 
     member this.close() = WinUserApi.PostMessage(hwnd, WindowMessages.WM_SYSCOMMAND, IntPtr(SystemMenuCommandValues.SC_CLOSE), IntPtr.Zero).ignore
 
-    /// Starts a native mouse-driven move, as if the pointer had gone down on this window's own
-    /// title bar: Windows takes the drag loop from here. The low word of SC_MOVE's wParam picks
-    /// the input source; +2 is the conventional "move by mouse" value for a synthesized start.
-    member this.beginDragMove() = WinUserApi.PostMessage(hwnd, WindowMessages.WM_SYSCOMMAND, IntPtr(SystemMenuCommandValues.SC_MOVE + 2), IntPtr.Zero).ignore
-
     member this.setForegroundOrRestore(force) =
         if this.isMinimized then
             WinUserApi.ShowWindow(this.hwnd, ShowWindowCommands.SW_RESTORE).ignore
