@@ -196,9 +196,12 @@ module FollowerPlacement =
                     move()
                 elif actual.showCmd=ShowWindowCommands.SW_SHOWMAXIMIZED && wp.showCmd=ShowWindowCommands.SW_SHOWMAXIMIZED then
                     // Cross-monitor maximization requires moving before restoring placement.
-                    if actual<>wp || window.bounds<>target() then
-                        move()
-                        place wp
+                    // SetWindowPlacement(SW_SHOWMAXIMIZED) re-maximizes to the monitor's native
+                    // full size, undoing a smaller same-monitor target (room reserved for the
+                    // strip), so it only runs when the captured placement itself changed, not
+                    // for a pure size correction on the same monitor.
+                    if window.bounds<>target() then move()
+                    if actual<>wp then place wp
                 elif actual<>wp then place wp
                 if valid() && window.needsMinimizeAnchor then positioned <- true
                 window.prepareMinimizeAnchor(valid)
