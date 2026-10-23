@@ -386,7 +386,14 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
 
     let isMaximizedExport = Cell.export <| fun() ->
         zorderCell.value.tryHead.exists(fun hwnd -> this.os.windowFromHwnd(hwnd).isMaximized)
- 
+
+    let mutable reserveSpaceWhenMaximized = Services.settings.getValue("reserveSpaceWhenMaximized").cast<bool>()
+    /// A top/horizontal dock, outside a split, with the setting on: the only case where a
+    /// maximized member window is shrunk to leave room for the strip instead of overlaying it.
+    let reserveSpaceApplies() = reserveSpaceWhenMaximized && not this.ts.isVertical && not this.isSplit
+    let spaceReservedExport = Cell.export <| fun() ->
+        isMaximizedExport.value && reserveSpaceApplies()
+
     let boundsExport = Cell.export <| fun() ->
         placement.value.bind <| fun(_,_,visible) ->
             if isVisibleCell.value then Some(visible) else None
@@ -496,12 +503,25 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
         
             
         isMaximizedExport.init()
+        spaceReservedExport.init()
         isDraggingExport.init()
         zorderExport.init()
         boundsExport.init()
         isForegroundExport.init()
 
         this.ts.setTabAppearance(this.tabAppearance)
+        let reserveSpaceSubscription = Services.settings.notifyValue "reserveSpaceWhenMaximized" (fun value ->
+            this.invokeAsync(fun() ->
+                if not isDestroyed.value then
+                    reserveSpaceWhenMaximized <- unbox value
+                    match zorderCell.value.tryHead with
+                    | Some(top) when this.os.windowFromHwnd(top).isMaximized ->
+                        this.saveTopWindowPlacement()
+                        this.adjustChildWindows()
+                        if reserveSpaceApplies() then this.adjustWindowPlacement(top)
+                        spaceReservedExport.update()
+                    | _ -> ()))
+        exitedEvent.Publish.Add(fun _ -> reserveSpaceSubscription.Dispose())
         let appColorsSubscription = Services.settings.notifyValue "appTabColors" (fun _ ->
             this.invokeAsync(fun() -> if not isDestroyed.value then this.refreshTabColors()))
         exitedEvent.Publish.Add(fun _ -> appColorsSubscription.Dispose())
@@ -1812,7 +1832,15 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
             let monitorBounds =
                 if window.isMaximized then
                     //windows are placed slightly off screen when maximized, get the bounds of the monitor instead
-                    Mon.fromHwnd(window.hwnd).map(fun mon -> mon.workRect.move(-1,-1))
+                    Mon.fromHwnd(window.hwnd).map(fun mon ->
+                        let wr = mon.workRect.move(-1,-1)
+                        if reserveSpaceApplies() then
+                            // Leave the same room above the window that outsideBounds leaves for a
+                            // floating window: the strip overlaps the window's own top edge by
+                            // decoratorHeightOffset, so only the remainder needs to be reserved.
+                            let reserved = this.tabAppearance.tabHeight - this.tabAppearance.tabHeightOffset
+                            Rect(Pt(wr.x, wr.y + reserved), Sz(wr.width, wr.height - reserved))
+                        else wr)
                 else None
             let bounds = monitorBounds.def(window.bounds)
             let visible = monitorBounds.def(window.visibleBounds)
@@ -1856,6 +1884,11 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
         this.setTabInfo(hwnd)
 
     member this.isMaximized = isMaximizedExport :> ICellOutput<bool>
+
+    /// True while this group's maximized top window is actually shrunk to leave room for the
+    /// strip above it (see `reserveSpaceApplies`), so auto-hide no longer needs to treat it as
+    /// an overlay the way an ordinary maximized window still is.
+    member this.spaceReserved = spaceReservedExport :> ICellOutput<bool>
 
     member this.isMouseOver = this.ts.isMouseOver
 
@@ -2035,10 +2068,14 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
                     let isForeground = this.os.foreground.hwnd = hwnd
                     this.saveTopWindowPlacement()
                     this.adjustChildWindows()
+                    // Only the followers are aligned above: the foreground window keeps whatever
+                    // rect Windows just gave it unless we are reserving room for the strip.
+                    if window.isMaximized && reserveSpaceApplies() then this.adjustWindowPlacement(hwnd)
                     if isForeground then
                         this.makeTopWindowForeground()
                     this.foreground <- this.os.foreground.hwnd
                     isMaximizedExport.update()
+                    spaceReservedExport.update()
                     // Maximized or restored, a window rises over a strip it does not own.
                     this.liftUnownedStrip hwnd
             | _ -> ()

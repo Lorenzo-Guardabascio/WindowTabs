@@ -180,6 +180,12 @@ module Strings =
         let autoHide = { caption={ en="Auto-hide tabs"; zh="自动隐藏标签"; ja="タブを自動的に隠す"; ar="إخفاء علامات التبويب تلقائيًا" }
                          description={ en="Show a thin strip until hover."; zh="只显示细栏，悬停展开。"; ja="細いバーだけ表示し、ホバーで展開します。"; ar="يبقى شريط رفيع فقط حتى تمرّر المؤشر فوقه." }
                          keywords={ en="collapse"; zh="收起"; ja="折りたたみ"; ar="طيّ" } }
+        let reserveSpaceMaximized = { caption={ en="Keep room for tabs when maximized"; zh="最大化时为标签保留空间"; ja="最大化時にタブの表示領域を確保"; ar="حجز مساحة لعلامات التبويب عند التكبير" }
+                                      description={ en="Shrinks a maximized window so the tab strip has its own space instead of covering it."
+                                                    zh="将最大化的窗口稍微缩小，让标签栏拥有独立空间，而不是遮挡它。"
+                                                    ja="最大化したウィンドウを少し縮小し、タブが重ならないよう専用の領域を確保します。"
+                                                    ar="يُصغّر النافذة المكبّرة قليلاً ليكون لشريط علامات التبويب مساحته الخاصة بدلاً من تغطيتها." }
+                                      keywords={ en="fullscreen overlap cover"; zh="全屏 重叠 遮挡"; ja="全画面 重なる 隠れる"; ar="ملء الشاشة تداخل تغطية" } }
         let showTabsOnSwitch = { caption={ en="Show tabs briefly after switching"; zh="切换后短暂显示标签"; ja="切り替え後にタブを一時的に表示"; ar="إظهار علامات التبويب لفترة وجيزة بعد التبديل" }
                                  description={ en="For about a second, so you can see where you are."; zh="显示约一秒，方便确认当前位置。"; ja="約 1 秒間表示して、今いる位置を確認できます。"; ar="لمدة ثانية تقريبًا لتتمكن من معرفة موضعك." }
                                  keywords={ en="peek"; zh="短暂显示"; ja="一時表示"; ar="معاينة" } }

@@ -683,6 +683,7 @@ type TabStripDecorator(group:WindowGroup) as this =
     member private this.initAutoHide() =
         let callbackRef = ref None
         let isMaximized = Cell.import(group.isMaximized)
+        let spaceReserved = Cell.import(group.spaceReserved)
         let isShownInside = Cell.import(this.ts.isShownInside)
         let isMouseOver = Cell.import(group.isMouseOver)
         let propCell(key,def) =
@@ -740,7 +741,9 @@ type TabStripDecorator(group:WindowGroup) as this =
         Cell.listen <| fun() ->
             let shrink =
                 (autoHideCell.value = "Always" ||
-                 ((isMaximized.value || isShownInside.value) && autoHideCell.value = "Maximized")) &&
+                 // A maximized window whose space is actually reserved no longer overlaps the
+                 // strip, so it is not a reason to hide it, same as an ordinary floating window.
+                 (((isMaximized.value && not spaceReserved.value) || isShownInside.value) && autoHideCell.value = "Maximized")) &&
                 isMouseOver.value.not &&
                 isDraggingCell.value.not &&
                 contextMenuVisibleCell.value.not &&

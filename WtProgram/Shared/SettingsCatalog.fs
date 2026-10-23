@@ -39,6 +39,7 @@ module SettingsCatalog =
         { id="tabColumnWidth"; page=AppearanceSettings; text=Strings.Settings.tabColumnWidth; binding=Number(columnWidthRange) }
         // "Maximized" also covers windows whose tabs sit inside them (top snaps); the stored value keeps its original name.
         { id="auto-hide-tabs"; page=GeneralSettings; text=Strings.Settings.autoHide; binding=Choice("autoHideMode",["Never";"Maximized";"Always"],"Maximized") }
+        { id="reserve-space-maximized"; page=GeneralSettings; text=Strings.Settings.reserveSpaceMaximized; binding=Toggle("reserveSpaceWhenMaximized",false,false) }
         { id="show-tabs-on-switch"; page=GeneralSettings; text=Strings.Settings.showTabsOnSwitch; binding=Toggle("showTabsOnSwitch",true,true) }
         { id="combine-taskbar-icons"; page=GeneralSettings; text=Strings.Settings.combineTaskbarIcons; binding=Toggle("combineIconsInTaskbar",false,true) }
         { id="use-windowtabs-for-alt-tab"; page=GeneralSettings; text=Strings.Settings.replaceAltTab; binding=Toggle("replaceAltTab",false,false) }
