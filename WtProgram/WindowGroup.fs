@@ -387,7 +387,9 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
     let isMaximizedExport = Cell.export <| fun() ->
         zorderCell.value.tryHead.exists(fun hwnd -> this.os.windowFromHwnd(hwnd).isMaximized)
 
-    let mutable reserveSpaceWhenMaximized = Services.settings.getValue("reserveSpaceWhenMaximized").cast<bool>()
+    // Read in init(), not here: a constructor-time Send into the settings thread is the
+    // deadlock shape SettingsTheme's "calls back into the blocked settings thread" check guards.
+    let mutable reserveSpaceWhenMaximized = false
     /// A top/horizontal dock, outside a split, with the setting on: the only case where a
     /// maximized member window is shrunk to leave room for the strip instead of overlaying it.
     let reserveSpaceApplies() = reserveSpaceWhenMaximized && not this.ts.isVertical && not this.isSplit
@@ -502,6 +504,7 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
         shellHookWindow.set(Some(_os.registerShellHooks this.shellEvents))
         
             
+        reserveSpaceWhenMaximized <- Services.settings.getValue("reserveSpaceWhenMaximized").cast<bool>()
         isMaximizedExport.init()
         spaceReservedExport.init()
         isDraggingExport.init()

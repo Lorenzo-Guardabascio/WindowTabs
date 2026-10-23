@@ -172,6 +172,7 @@ type Settings(isStandAlone, ?saveDelay:int) as this =
                         showTabsOnSwitch = settingsJson.getBool("showTabsOnSwitch").def(
                             if settingsJson.getBool("minimalMode").def(false) then false
                             else SettingsCatalog.toggleDefault "showTabsOnSwitch" hasExistingSettings)
+                        reserveSpaceWhenMaximized = settingsJson.getBool("reserveSpaceWhenMaximized").def(SettingsCatalog.toggleDefault "reserveSpaceWhenMaximized" hasExistingSettings)
                         enableShiftScroll = settingsJson.getBool("enableShiftScroll").def(SettingsCatalog.toggleDefault "enableShiftScroll" hasExistingSettings)
                         enableCtrlScroll = settingsJson.getBool("enableCtrlScroll").def(SettingsCatalog.toggleDefault "enableCtrlScroll" hasExistingSettings)
                         enableMiddleClickClose = settingsJson.getBool("enableMiddleClickClose").def(SettingsCatalog.toggleDefault "enableMiddleClickClose" hasExistingSettings)
@@ -255,6 +256,7 @@ type Settings(isStandAlone, ?saveDelay:int) as this =
             settingsJson.setBool("enableHoverActivate", settings.enableHoverActivate)
             settingsJson.setString("autoHideMode", settings.autoHideMode)
             settingsJson.setBool("showTabsOnSwitch", settings.showTabsOnSwitch)
+            settingsJson.setBool("reserveSpaceWhenMaximized", settings.reserveSpaceWhenMaximized)
             settingsJson.Remove("autoHide") |> ignore
             settingsJson.Remove("minimalMode") |> ignore
             // The license key and activation ticket of the old paid version: nothing reads them.

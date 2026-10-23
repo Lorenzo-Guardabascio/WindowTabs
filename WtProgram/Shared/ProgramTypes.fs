@@ -51,6 +51,8 @@ type SettingsRec = {
     sessionRestore: string
     /// Expand auto-hidden tabs for a moment after switching tabs.
     showTabsOnSwitch: bool
+    /// Shrink a maximized window to leave room for the strip instead of overlaying it.
+    reserveSpaceWhenMaximized: bool
     enableShiftScroll: bool
     /// Ctrl + scroll over the tabs moves the current tab.
     enableCtrlScroll: bool
