@@ -1841,7 +1841,10 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
                             // Leave the same room above the window that outsideBounds leaves for a
                             // floating window: the strip overlaps the window's own top edge by
                             // decoratorHeightOffset, so only the remainder needs to be reserved.
-                            let reserved = this.tabAppearance.tabHeight - this.tabAppearance.tabHeightOffset
+                            // A few extra pixels of slack: an exact fit ties shouldShowInside's own
+                            // region-height comparison against DPI-rounding noise, which must not
+                            // be able to tip it back to the inside/overlay choice.
+                            let reserved = this.tabAppearance.tabHeight - this.tabAppearance.tabHeightOffset + Dpi.scale 4
                             Rect(Pt(wr.x, wr.y + reserved), Sz(wr.width, wr.height - reserved))
                         else wr)
                 else None
