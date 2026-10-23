@@ -2133,6 +2133,9 @@ type WindowGroup(enableSuperBar:bool, plugins:List2<IPlugin>, initialAppearance:
             if prevTop.value.IsNone then
                 prevTop.set(Some(hwnd))
                 this.saveTopWindowPlacement()
+                // A window already maximized when first grouped (no transition fires for it)
+                // still needs its room reserved, not just one maximized after joining.
+                if window.isMaximized && reserveSpaceApplies() then this.shrinkReservedHead(hwnd)
             let registerEvent evt = 
                 let handler = fun() -> this.main(hwnd, evt)
                 window.setWinEventHook evt handler
